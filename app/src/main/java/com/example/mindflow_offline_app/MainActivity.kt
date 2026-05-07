@@ -48,20 +48,34 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("moodRecording") {
                             val moodViewModel: MoodViewModel = hiltViewModel()
-                            MoodRecordingScreen(moodViewModel)
+                            MoodRecordingScreen(
+                                moodViewModel = moodViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                         composable("exercise") {
                             val exerciseViewModel: ExerciseViewModel = hiltViewModel()
-                            ExerciseScreen(exerciseViewModel)
+                            ExerciseScreen(
+                                exerciseViewModel = exerciseViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                         composable("admin") {
                             val adminViewModel: AdminViewModel = hiltViewModel()
-                            AdminScreen(adminViewModel)
+                            AdminScreen(
+                                adminViewModel = adminViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                         composable("mentalHealthTest") {
-                            MentalHealthTestScreen(onTestComplete = { score ->
-                                navController.navigate("mentalHealthResult/$score")
-                            })
+                            MentalHealthTestScreen(
+                                onTestComplete = { score ->
+                                    navController.navigate("mentalHealthResult/$score") {
+                                        popUpTo("mentalHealthTest") { inclusive = true }
+                                    }
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                         composable(
                             "mentalHealthResult/{score}",
@@ -69,12 +83,17 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val score = backStackEntry.arguments?.getInt("score") ?: 0
                             MentalHealthTestResultScreen(score = score) {
-                                navController.popBackStack("mentalHealthTest", inclusive = true)
+                                navController.navigate("dashboard") {
+                                    popUpTo("dashboard") { inclusive = false }
+                                }
                             }
                         }
                         composable("testHistory") {
                             val historyViewModel: TestHistoryViewModel = hiltViewModel()
-                            TestHistoryScreen(historyViewModel)
+                            TestHistoryScreen(
+                                viewModel = historyViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                     }
                 }
