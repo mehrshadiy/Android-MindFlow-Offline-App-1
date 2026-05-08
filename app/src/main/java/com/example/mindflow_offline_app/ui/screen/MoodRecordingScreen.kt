@@ -8,8 +8,10 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -36,7 +38,8 @@ fun MoodRecordingScreen(
 ) {
     var selectedMood by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    var showSuccess by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -61,33 +64,15 @@ fun MoodRecordingScreen(
                 )
             )
         },
-        snackbarHost = {
-            if (showSuccess) {
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    containerColor = MoodExcellent,
-                    contentColor = Color.White
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("احساسات شما با موفقیت ثبت شد!")
-                    }
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Card(
@@ -138,73 +123,111 @@ fun MoodRecordingScreen(
                 enter = scaleIn(spring(Spring.DampingRatioMediumBouncy)),
                 exit = scaleOut()
             ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(4.dp, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "یادداشت (اختیاری)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = note,
-                            onValueChange = { note = it },
-                            placeholder = { Text("چه اتفاقی افتاده؟ چرا این احساس را دارید؟") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(4.dp, RoundedCornerShape(16.dp)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "یادداشت (اختیاری)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
+                            OutlinedTextField(
+                                value = note,
+                                onValueChange = { note = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(120.dp),
+                                placeholder = { Text("چه اتفاقی افتاده؟ چه احساسی دارید؟") },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = {
+                            if (selectedMood.isNotEmpty()) {
+                                val mood = Mood(
+                                    moodType = selectedMood,
+                                    note = note.ifEmpty { null },
+                                    date = System.currentTimeMillis()
+                                )
+                                moodViewModel.addMood(mood)
+
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "احساسات شما با موفقیت ثبت شد!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+
+                                selectedMood = ""
+                                note = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        enabled = selectedMood.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "ثبت احساسات",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            AnimatedVisibility(visible = selectedMood.isNotEmpty()) {
-                Button(
-                    onClick = {
-                        val newMood = Mood(
-                            moodType = selectedMood,
-                            note = note.ifBlank { null },
-                            date = System.currentTimeMillis()
-                        )
-                        moodViewModel.addMood(newMood)
-                        showSuccess = true
-                        
-                        // بازگشت به صفحه اصلی بعد از 1.5 ثانیه
-                        kotlinx.coroutines.GlobalScope.launch {
-                            kotlinx.coroutines.delay(1500)
-                            onBack()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = Icons.Default.Info,
                         contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "ذخیره احساسات",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "ثبت منظم احساسات به شما کمک می‌کند تا الگوهای روحی خود را بهتر بشناسید.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -225,7 +248,7 @@ fun MoodButton(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(70.dp)
+            .height(72.dp)
             .clickable(onClick = onClick)
             .shadow(if (isSelected) 8.dp else 2.dp, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),

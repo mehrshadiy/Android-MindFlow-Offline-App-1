@@ -14,37 +14,44 @@ class MentalHealthTestViewModel @Inject constructor() : ViewModel() {
         Question(
             id = 1,
             text = "من بیشتر اوقات احساس شادی می\u200Cکنم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = true  // سوال مثبت: هرگز=3، گاهی=2، اغلب=1، همیشه=0
         ),
         Question(
             id = 2,
             text = "من احساس اضطراب یا نگرانی دارم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = false  // سوال منفی: هرگز=0، گاهی=1، اغلب=2، همیشه=3
         ),
         Question(
             id = 3,
             text = "من اختلال خواب دارم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = false  // سوال منفی
         ),
         Question(
             id = 4,
             text = "من از فعالیت های روزانه ام لذت می\u200Cبرم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = true  // سوال مثبت
         ),
         Question(
             id = 5,
             text = "من نسبت به آینده احساس ناامیدی می\u200Cکنم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = false  // سوال منفی
         ),
         Question(
             id = 6,
             text = "احساس آرامش برایم دشوار است.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = false  // سوال منفی
         ),
         Question(
             id = 7,
             text = "من نگاه مثبتی به زندگی دارم.",
-            options = listOf("هرگز", "گاهی", "اغلب", "همیشه")
+            options = listOf("هرگز", "گاهی", "اغلب", "همیشه"),
+            isPositive = true  // سوال مثبت
         )
     )
 
@@ -69,6 +76,30 @@ class MentalHealthTestViewModel @Inject constructor() : ViewModel() {
         _selectedOptions.value = currentSelection
     }
 
+    /**
+     * محاسبه امتیاز نهایی با توجه به نوع سوال (مثبت یا منفی)
+     * سوالات مثبت: هرگز=3، گاهی=2، اغلب=1، همیشه=0
+     * سوالات منفی: هرگز=0، گاهی=1، اغلب=2، همیشه=3
+     */
+    fun calculateScore(): Int {
+        var totalScore = 0
+        
+        _selectedOptions.value.forEach { (questionId, optionIndex) ->
+            val question = _questions.value.find { it.id == questionId }
+            if (question != null) {
+                val score = if (question.isPositive) {
+                    // سوال مثبت: امتیاز معکوس
+                    3 - optionIndex
+                } else {
+                    // سوال منفی: امتیاز مستقیم
+                    optionIndex
+                }
+                totalScore += score
+            }
+        }
+        
+        return totalScore
+    }
 
     fun nextQuestion() {
         if (_currentQuestionIndex.value < _questions.value.size - 1) {

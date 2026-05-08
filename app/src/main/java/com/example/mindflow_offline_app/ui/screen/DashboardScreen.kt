@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +27,11 @@ import com.example.mindflow_offline_app.viewmodel.MoodViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mindflow_offline_app.viewmodel.TestHistoryViewModel
+import com.example.mindflow_offline_app.ui.components.DashboardChart
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,20 +67,19 @@ fun DashboardScreen(
         label = "tipScroll"
     )
 
+    val testHistoryViewModel: TestHistoryViewModel = hiltViewModel()
+    val testResults by testHistoryViewModel.results.collectAsState()
+    LaunchedEffect(Unit) { testHistoryViewModel.loadResults() }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            "MindFlow",
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "سلامت روان شما",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    Text(
+                        "سلامت روان شما",
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -122,7 +127,7 @@ fun DashboardScreen(
                     )
                 }
             }
-            
+
             item {
                 Text(
                     text = "دسترسی سریع",
@@ -167,39 +172,12 @@ fun DashboardScreen(
                     gradientColors = listOf(Purple40, Purple80)
                 )
             }
-            
-            if (moods.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "حال و هوای اخیر شما",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-                
-                items(moods.take(5)) { mood ->
-                    val moodColor = when (mood.moodType) {
-                        "عالی" -> MoodExcellent
-                        "خوب" -> MoodGood
-                        "معمولی" -> MoodNormal
-                        "بد" -> MoodBad
-                        "خیلی بد" -> MoodVeryBad
-                        else -> MoodNormal
-                    }
-                    
-                    MoodCard(
-                        mood = mood.moodType,
-                        note = mood.note,
-                        date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(mood.date)),
-                        moodColor = moodColor
-                    )
-                }
-            }
-            
+
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                DashboardChart(
+                    moods = moods,
+                    testResults = testResults
+                )
             }
         }
     }

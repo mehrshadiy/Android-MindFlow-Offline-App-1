@@ -244,7 +244,7 @@ fun MentalHealthTestScreen(
                     } else {
                         Button(
                             onClick = {
-                                val score = selectedOptions.values.sum()
+                                val score = testViewModel.calculateScore()
                                 testHistoryViewModel.addResult(score)
                                 onTestComplete(score)
                             },
